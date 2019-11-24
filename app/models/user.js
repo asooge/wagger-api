@@ -15,8 +15,15 @@ const userSchema = new mongoose.Schema({
     ref: 'User'
   },
   matches: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: 'User'
+    type: [
+      { reference: mongoose.Schema.Types.ObjectId,
+        messages: {
+          type: [
+            { user: mongoose.Schema.Types.ObjectId,
+              text: String
+            }]
+        } }
+    ]
   },
   token: String
 }, {

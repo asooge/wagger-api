@@ -14,6 +14,7 @@ const BadParamsError = errors.BadParamsError
 const BadCredentialsError = errors.BadCredentialsError
 
 const User = require('../models/user')
+const Match = require('../models/match')
 
 const requireToken = passport.authenticate('bearer', { session: false })
 
@@ -35,6 +36,7 @@ router.get('/users', (req, res, next) => {
 // Show one user
 router.get('/users/:id', (req, res, next) => {
   User.findById(req.params.id)
+    .populate('matches.reference', '-likes -matches -token')
     .then(errors.handle404)
     .then(user => user.toObject())
     .then(user => res.status(200).json({ user }))
@@ -70,10 +72,12 @@ router.patch('/users/:id/likes', (req, res, next) => {
           if (user.likes.includes(myId)) {
             console.log(true)
             // add the relation to the other-user match array and save
-            user.matches.push(myId)
+            user.matches.push({ reference: myId, messages: [] })
+            console.log(user)
             user.save()
+
             // also add to current-user match array and save
-            me.matches.push(matchId)
+            me.matches.push({ reference: matchId, messages: [] })
             me.save()
             // finally add the like to current-user array for good measure
             me.likes.push(matchId)
