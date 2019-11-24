@@ -61,7 +61,8 @@ router.patch('/users/:id/likes', (req, res, next) => {
         .then(user => {
           console.log(user)
           // if you already matched with the user, return
-          if (user.matches.includes(myId)) {
+          if (user.matches.find(match => match.reference.toString() === myId)) {
+            console.log('found the match')
             return me
           }
           // if you already like the user, return
