@@ -45,32 +45,42 @@ router.get('/users/:id', (req, res, next) => {
 router.patch('/users/:id/likes', (req, res, next) => {
   console.log(req.params)
   console.log(req.body.like)
-  let me = {}
 
-  User.findById(req.params.id)
-    .then(function (user) {
-      me = user
-      if (!me.likes.includes(req.body.like)) {
-        me.likes.push(req.body.like)
-        me.save()
-        console.log(me)
-      }
+  const myId = req.params.id
+  const matchId = req.body.like
+  // find current user
+  User.findById(myId)
+    .then(function (me) {
+      return me
     })
-    .then(() => {
-      User.findById(req.body.like)
+    // then find other-user and compare with me
+    .then((me) => {
+      User.findById(matchId)
         .then(user => {
           console.log(user)
-
-          if (user.likes.includes(req.params.id)) {
+          // if you already matched with the user, return
+          if (user.matches.includes(myId)) {
+            return me
+          }
+          // if you already like the user, return
+          if (me.likes.includes(matchId)) {
+            return me
+          }
+          // if its a match!
+          if (user.likes.includes(myId)) {
             console.log(true)
-            if (!user.matches.includes(req.params.id)) {
-              user.matches.push(req.params.id)
-              user.save()
-              me.matches.push(req.body.like)
-              me.save()
-            }
+            // add the relation to the other-user match array and save
+            user.matches.push(myId)
+            user.save()
+            // also add to current-user match array and save
+            me.matches.push(matchId)
+            me.save()
+            // finally add the like to current-user array for good measure
+            me.likes.push(matchId)
           } else {
-            console.log(false)
+            // otherwise, simply add the like to the user likes array and save
+            me.likes.push(matchId)
+            me.save()
           }
           return me
         })
@@ -87,6 +97,18 @@ router.delete('/users/:id/likes', (req, res, next) => {
       return user.save()
     })
     .then(user => res.status(200).json({ user: user.toObject() }))
+})
+
+router.delete('/users/relations', (req, res, next) => {
+  User.find()
+    .then(users => {
+      users.forEach(user => {
+        user.likes = []
+        user.matches = []
+        user.save()
+      })
+    })
+    .then(user => res.sendStatus(204))
 })
 
 // Delete a match
