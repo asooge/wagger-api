@@ -28,7 +28,7 @@ const multerUpload = multer({ storage: storage })
 router.get('/users', (req, res, next) => {
   User.find()
     .select('-createdAt -updatedAt -matches.id -matches.messages._id')
-    .populate('matches.messages.user', '-images -likes -createdAt -updatedAt -token -matches -__v')
+    .populate('matches.messages.user', '-speak -images -likes -createdAt -updatedAt -token -matches -__v')
     // .populate('matches', '-likes -matches -token')
     .then(users => {
       return users.map(user => user.toObject())
@@ -109,6 +109,8 @@ router.delete('/users/:id/likes', (req, res, next) => {
     .then(user => res.status(200).json({ user: user.toObject() }))
 })
 
+// Nuclear option - reset all user relations
+// For development only
 router.delete('/users/relations', (req, res, next) => {
   User.find()
     .then(users => {
@@ -143,7 +145,31 @@ router.delete('/users/:id/matches', (req, res, next) => {
     .then(me => res.status(200).json({ user: me.toObject() }))
 })
 
-// Upload image
+// Add or update dog name
+// POST request to '/users/:id/name'
+router.post('/users/:id/name', (req, res, next) => {
+  User.findById(req.params.id)
+    .then(me => {
+      me.name = req.body.name
+      return me.save()
+    })
+    .then(me => res.status(201).json({ user: me.toObject() }))
+    .catch(next)
+})
+
+// Add or update speak
+// POST request to '/users/:id/speak'
+router.post('/users/:id/speak', (req, res, next) => {
+  User.findById(req.params.id)
+    .then(me => {
+      me.speak = req.body.speak
+      return me.save()
+    })
+    .then(me => res.status(201).json({ user: me.toObject() }))
+    .catch(next)
+})
+
+// Upload a dog image
 router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, next) => {
   console.log(req.file)
   console.log(':num is', req.params.num)
@@ -153,6 +179,19 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
       User.findById(req.params.id)
         .then(user => {
           user.images[req.params.num] = (awsResponse.Location)
+          return user.save()
+        })
+        .then(me => res.status(201).json({ user: me.toObject() }))
+    })
+})
+
+// Upload a profile pic
+router.post('/users/:id/profile', multerUpload.single('file'), (req, res, next) => {
+  uploadApi(req.file, req.params.id, 'profile')
+    .then(awsResponse => {
+      User.findById(req.params.id)
+        .then(user => {
+          user.profile = awsResponse.Location
           return user.save()
         })
         .then(me => res.status(201).json({ user: me.toObject() }))

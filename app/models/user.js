@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   },
   name: {
     type: String,
+    default: '',
     maxlength: 35
   },
   speak: {
@@ -19,6 +20,7 @@ const userSchema = new mongoose.Schema({
     default: 'woof',
     maxlength: 500
   },
+  profile: String,
   images: Array,
   likes: {
     type: [mongoose.Schema.Types.ObjectId],
