@@ -28,6 +28,7 @@ const multerUpload = multer({ storage: storage })
 router.get('/users', (req, res, next) => {
   User.find()
     .select('-createdAt -updatedAt -matches.id -matches.messages._id')
+    .populate('matches.messages.user', '-images -likes -createdAt -updatedAt -token -matches -__v')
     // .populate('matches', '-likes -matches -token')
     .then(users => {
       return users.map(user => user.toObject())
@@ -174,7 +175,7 @@ router.post('/users/:id/matches/:match/messages', (req, res, next) => {
     })
   // push the new message to the match array
     .then(match => {
-      match.messages.push({ text: req.body.text, user: req.body.user, time: time })
+      match.messages.push({ text: req.body.text, user: req.params.id, time: time })
       return match.ownerDocument().save()
     })
     .then(me => res.status(201).json({ user: me.toObject() }))
@@ -189,7 +190,7 @@ router.post('/users/:id/matches/:match/messages', (req, res, next) => {
     })
   // push the new message to the match array
     .then(match => {
-      match.messages.push({ text: req.body.text, user: req.body.user, time: time })
+      match.messages.push({ text: req.body.text, user: req.params.id, time: time })
       return match.ownerDocument().save()
     })
     .catch(next)

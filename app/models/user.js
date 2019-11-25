@@ -10,6 +10,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  name: {
+    type: String,
+    maxlength: 35
+  },
+  speak: {
+    type: String,
+    default: 'woof',
+    maxlength: 500
+  },
   images: Array,
   likes: {
     type: [mongoose.Schema.Types.ObjectId],
