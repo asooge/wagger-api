@@ -14,12 +14,15 @@ const BadParamsError = errors.BadParamsError
 const BadCredentialsError = errors.BadCredentialsError
 
 const User = require('../models/user')
-const Match = require('../models/match')
 
 const requireToken = passport.authenticate('bearer', { session: false })
 
-// instantiate a router (mini app that only handles routes)
 const router = express.Router()
+
+const uploadApi = require('../../lib/uploadApi')
+const multer = require('multer')
+const storage = multer.memoryStorage()
+const multerUpload = multer({ storage: storage })
 
 // Index all users
 router.get('/users', (req, res, next) => {
@@ -135,6 +138,23 @@ router.delete('/users/:id/matches', (req, res, next) => {
       return user.save()
     })
     .then(me => res.status(200).json({ user: me.toObject() }))
+})
+
+// Upload image
+
+router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, next) => {
+  console.log(req.file)
+  console.log(':num is', req.params.num)
+  uploadApi(req.file, req.params.id, req.params.num)
+    .then(awsResponse => {
+      console.log('from aws', awsResponse)
+      User.findById(req.params.id)
+        .then(user => {
+          user.images[req.params.num] = (awsResponse.Location)
+          return user.save()
+        })
+        .then(me => res.status(201).json({ user: me.toObject() }))
+    })
 })
 
 // SIGN UP
