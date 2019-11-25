@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema({
         messages: {
           type: [
             { user: mongoose.Schema.Types.ObjectId,
-              text: String
+              text: String,
+              time: String
             }]
         } }
     ]

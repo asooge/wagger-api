@@ -27,7 +27,7 @@ const multerUpload = multer({ storage: storage })
 // Index all users
 router.get('/users', (req, res, next) => {
   User.find()
-    .select('-createdAt -updatedAt')
+    .select('-createdAt -updatedAt -matches.id -matches.messages._id')
     // .populate('matches', '-likes -matches -token')
     .then(users => {
       return users.map(user => user.toObject())
@@ -43,6 +43,7 @@ router.get('/users/:id', (req, res, next) => {
     .then(errors.handle404)
     .then(user => user.toObject())
     .then(user => res.status(200).json({ user }))
+    .catch(next)
 })
 
 // Like a dog
@@ -93,7 +94,7 @@ router.patch('/users/:id/likes', (req, res, next) => {
           return me
         })
         .then(me => res.status(200).json({ user: me.toObject() }))
-        .catch(console.error)
+        .catch(next)
     })
 })
 
@@ -117,6 +118,7 @@ router.delete('/users/relations', (req, res, next) => {
       })
     })
     .then(user => res.sendStatus(204))
+    .catch(next)
 })
 
 // Delete a match
@@ -141,7 +143,6 @@ router.delete('/users/:id/matches', (req, res, next) => {
 })
 
 // Upload image
-
 router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, next) => {
   console.log(req.file)
   console.log(':num is', req.params.num)
@@ -157,13 +158,51 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
     })
 })
 
+// Create a message
+router.post('/users/:id/matches/:match/messages', (req, res, next) => {
+  console.log('time is:', req.body.time)
+  const time = new Date()
+  console.log(time.toLocaleString())
+  // Find the current user
+  User.findById(req.params.id)
+  // Find the current match
+    .then(me => {
+      console.log(me)
+      return me.matches.find(match => {
+        return match.reference.toString() === req.params.match
+      })
+    })
+  // push the new message to the match array
+    .then(match => {
+      match.messages.push({ text: req.body.text, user: req.body.user, time: time })
+      return match.ownerDocument().save()
+    })
+    .then(me => res.status(201).json({ user: me.toObject() }))
+    .catch(next)
+  User.findById(req.params.match)
+  // Find the current match
+    .then(user => {
+      console.log(user)
+      return user.matches.find(match => {
+        return match.reference.toString() === req.params.id
+      })
+    })
+  // push the new message to the match array
+    .then(match => {
+      match.messages.push({ text: req.body.text, user: req.body.user, time: time })
+      return match.ownerDocument().save()
+    })
+    .catch(next)
+
+  // Find the match user
+  // Find the current match
+  // push the new message to the match array
+})
+
 // SIGN UP
 // POST /sign-up
 router.post('/sign-up', (req, res, next) => {
-  // start a promise chain, so that any errors will pass to `handle`
   Promise.resolve(req.body.credentials)
-    // reject any requests where `credentials.password` is not present, or where
-    // the password is an empty string
     .then(credentials => {
       if (!credentials ||
           !credentials.password ||
@@ -171,21 +210,15 @@ router.post('/sign-up', (req, res, next) => {
         throw new BadParamsError()
       }
     })
-    // generate a hash from the provided password, returning a promise
     .then(() => bcrypt.hash(req.body.credentials.password, bcryptSaltRounds))
     .then(hash => {
-      // return necessary params to create a user
       return {
         email: req.body.credentials.email,
         hashedPassword: hash
       }
     })
-    // create user with provided email and hashed password
     .then(user => User.create(user))
-    // send the new user object back with status 201, but `hashedPassword`
-    // won't be send because of the `transform` in the User model
     .then(user => res.status(201).json({ user: user.toObject() }))
-    // pass any errors along to the error handler
     .catch(next)
 })
 
@@ -208,16 +241,12 @@ router.post('/sign-in', (req, res, next) => {
       if (correctPassword) {
         const token = crypto.randomBytes(16).toString('hex')
         user.token = token
-        // save the token to the DB as a property on user
         return user.save()
       } else {
-        // throw an error to trigger the error handler and end the promise chain
-        // this will send back 401 and a message about sending wrong parameters
         throw new BadCredentialsError()
       }
     })
     .then(user => {
-      // return status 201, the email, and the new token
       res.status(201).json({ user: user.toObject() })
     })
     .catch(next)
@@ -227,38 +256,26 @@ router.post('/sign-in', (req, res, next) => {
 // PATCH /change-password
 router.patch('/change-password', requireToken, (req, res, next) => {
   let user
-  // `req.user` will be determined by decoding the token payload
   User.findById(req.user.id)
-    // save user outside the promise chain
     .then(record => { user = record })
-    // check that the old password is correct
     .then(() => bcrypt.compare(req.body.passwords.old, user.hashedPassword))
-    // `correctPassword` will be true if hashing the old password ends up the
-    // same as `user.hashedPassword`
     .then(correctPassword => {
-      // throw an error if the new password is missing, an empty string,
-      // or the old password was wrong
       if (!req.body.passwords.new || !correctPassword) {
         throw new BadParamsError()
       }
     })
-    // hash the new password
     .then(() => bcrypt.hash(req.body.passwords.new, bcryptSaltRounds))
     .then(hash => {
-      // set and save the new hashed password in the DB
       user.hashedPassword = hash
       return user.save()
     })
-    // respond with no content and status 200
     .then(() => res.sendStatus(204))
-    // pass any errors along to the error handler
     .catch(next)
 })
 
+// Sign out: DELETE '/sign-out'
 router.delete('/sign-out', requireToken, (req, res, next) => {
-  // create a new random token for the user, invalidating the current one
   req.user.token = crypto.randomBytes(16)
-  // save the token and respond with 204
   req.user.save()
     .then(() => res.sendStatus(204))
     .catch(next)
