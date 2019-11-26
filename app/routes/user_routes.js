@@ -41,12 +41,32 @@ const multerUpload = multer({ storage: storage })
 
 // Add a property to the test object with user_id: null
 router.post('/users/:id/test', (req, res, next) => {
+  // Find me
   User.findById(req.params.id)
-    .then(user => {
-      user.test[req.body.like] = null
-      return user.save()
-    })
-    .then(me => res.status(201).json({ user: me }))
+    // then check if user_2_id exists as a property in test object
+    .then(me => {
+      console.log('me.test[req.body.like]', me.test[req.body.like])
+      // if doesn't already exist
+      if (!me.test[req.body.like]) {
+        // create the property on the test object with value = null
+        me.test[req.body.like] = null
+        return me.save()
+      } else {
+        User.findById(req.body.like)
+          // check for a match
+          .then(user => {
+            if (user.test[req.params.id] === null) {
+              console.log('its a match')
+              return user
+            }
+          })
+          .then(me => res.status(201).json({ user: me }))
+          .catch(console.error)
+      }
+      // find the other user
+
+    // send the response with the updated user (me)
+
 
   // StoreMatch.create({
   //   ref: [],
@@ -54,6 +74,8 @@ router.post('/users/:id/test', (req, res, next) => {
   // })
   // .then(match => res.status(201).json({ storeMatch: match}))
 })
+  .then(me => res.status(201).json({ user: me }))
+}
 
 // Route for GET all stored match data
 router.get('/match', (req, res, next) => {
