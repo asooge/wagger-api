@@ -24,6 +24,16 @@ const multer = require('multer')
 const storage = multer.memoryStorage()
 const multerUpload = multer({ storage: storage })
 
+// Add property: references to each user (2) stored in an Array
+// Add property: messages Array of references to messages
+
+// If (!user2_id.match.user1_id)
+// Add user_reference to the match object. value: false
+//  otherwise
+// Add user_reference to the match object. value: { match_object_refernce }
+// create a new instance of the StoreMatch Model.
+
+
 // Index all users
 router.get('/users', (req, res, next) => {
   User.find()
