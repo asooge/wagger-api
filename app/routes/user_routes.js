@@ -83,8 +83,7 @@ router.post('/users/:id/test', (req, res, next) => {
       .then(match => {
         user_1.test = { ...user_1.test, ...{ [user_2_id]: { user_ref: user_2_id, match_ref: match._id } } }
         user_1.save()
-        user_2.test = { ...user_2.test, ...{ [user_1_id]: match._id } }
-        user_2.test[user_1_id] = match._id
+        user_2.test = { ...user_2.test, ...{ [user_1_id]: { user_ref: user_1_id, match_ref: match._id } } }
         user_2.save()
         res.status(201).json({ test: match })
       })
@@ -106,13 +105,13 @@ router.get('/match', (req, res, next) => {
 // Index all users
 router.get('/users', (req, res, next) => {
   const pop = () => {
-    return 'test.5dc1a8082d3fde615f7e8caf.user_ref test.5dc1a8082d3fde615f7e8caf.match_ref'
+    return 'test.5dc1a8082d3fde615f7e8caf.user_ref test.5dc1a8082d3fde615f7e8caf.match_ref test.5dc18bb73f33b9572b307f7a.user_ref test.5dc18bb73f33b9572b307f7a.match_ref'
   }
   User.find()
     .select('-createdAt -updatedAt -matches -images, -likes')
 
     // .populate('test.5dc1a8082d3fde615f7e8caf.user_ref')
-    // .populate(pop())
+    .populate(pop())
 
     // .populate('matches', '-likes -matches -token')
     .then(users => {
