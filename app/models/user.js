@@ -19,7 +19,15 @@ const userSchema = new mongoose.Schema({
     //    messages: [{}, {}, {}],
     //    createdOn: Timestamp
     // }
-  }
+
+    type: mongoose.Schema.Types.Mixed,
+    default: {
+      user_1: false,
+      user_2: false,
+      user_3: {
+        hello: 'world'
+      }
+    }
   },
   hashedPassword: {
     type: String,
