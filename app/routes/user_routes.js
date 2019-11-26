@@ -85,6 +85,7 @@ router.post('/users/:id/test', (req, res, next) => {
         user_1.save()
         user_2.test = { ...user_2.test, ...{ [user_1_id]: { user_ref: user_1_id, match_ref: match._id } } }
         user_2.save()
+        user_1.test =
         res.status(201).json({ test: match })
       })
   })
