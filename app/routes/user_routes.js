@@ -14,6 +14,7 @@ const BadParamsError = errors.BadParamsError
 const BadCredentialsError = errors.BadCredentialsError
 
 const User = require('../models/user')
+const StoreMatch = require('../models/match')
 
 const requireToken = passport.authenticate('bearer', { session: false })
 
@@ -33,12 +34,42 @@ const multerUpload = multer({ storage: storage })
 // Add user_reference to the match object. value: { match_object_refernce }
 // create a new instance of the StoreMatch Model.
 
+// Test Route to update the user_1 match object and check the user_2 match object
+// if (user_2.match.user_1_id)
+// its a match!
+// create a new StoreMatch
+
+// Add a property to the test object with user_id: null
+router.post('/users/:id/test', (req, res, next) => {
+  User.findById(req.params.id)
+    .then(user => {
+      user.test[req.body.like] = null
+      return user.save()
+    })
+    .then(me => res.status(201).json({ user: me }))
+
+  // StoreMatch.create({
+  //   ref: [],
+  //   messages: []
+  // })
+  // .then(match => res.status(201).json({ storeMatch: match}))
+})
+
+// Route for GET all stored match data
+router.get('/match', (req, res, next) => {
+  StoreMatch.find()
+    .then(matches => {
+      return matches.map(match => match.toObject())
+    })
+    .then(matches => res.status(200).json({ storeMatch: matches }))
+    .catch(next)
+})
 
 // Index all users
 router.get('/users', (req, res, next) => {
   User.find()
-    .select('-createdAt -updatedAt -matches.id -matches.messages._id')
-    .populate('matches.messages.user', '-speak -images -likes -createdAt -updatedAt -token -matches -__v')
+    .select('-createdAt -updatedAt -matches -images, -likes')
+
     // .populate('matches', '-likes -matches -token')
     .then(users => {
       return users.map(user => user.toObject())
