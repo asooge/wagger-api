@@ -6,6 +6,21 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  test: {
+    // Test object to display a reference to each user
+    // messages array [{ text: '', user: ref, time: String }]
+
+    // Each user has a reference to test object so they can communicate
+    // matches can be accessed in constant time
+
+    // {user_id: false,
+    // user2_id: {
+    //    ref: [user3_id, user2_id],
+    //    messages: [{}, {}, {}],
+    //    createdOn: Timestamp
+    // }
+  }
+  },
   hashedPassword: {
     type: String,
     required: true
