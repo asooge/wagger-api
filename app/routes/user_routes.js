@@ -25,6 +25,9 @@ const multer = require('multer')
 const storage = multer.memoryStorage()
 const multerUpload = multer({ storage: storage })
 
+// require async from 'async'
+const async = require('async')
+
 // Add property: references to each user (2) stored in an Array
 // Add property: messages Array of references to messages
 
@@ -42,40 +45,53 @@ const multerUpload = multer({ storage: storage })
 // Add a property to the test object with user_id: null
 router.post('/users/:id/test', (req, res, next) => {
   // Find me
-  User.findById(req.params.id)
-    // then check if user_2_id exists as a property in test object
-    .then(me => {
-      console.log('me.test[req.body.like]', me.test[req.body.like])
-      // if doesn't already exist
-      if (!me.test[req.body.like]) {
-        // create the property on the test object with value = null
-        me.test[req.body.like] = null
-        return me.save()
-      } else {
-        User.findById(req.body.like)
-          // check for a match
-          .then(user => {
-            if (user.test[req.params.id] === null) {
-              console.log('its a match')
-              return user
-            }
-          })
-          .then(me => res.status(201).json({ user: me }))
-          .catch(console.error)
+  const queries = []
+  queries.push(function (cb) {
+    User.findById(req.params.id).exec(function (err, docs) {
+      if (err) {
+        throw cb(err)
       }
-      // find the other user
 
-    // send the response with the updated user (me)
+      // do some stuff with docs & pass or directly pass it
+      cb(null, docs)
+    })
+  })
 
+  queries.push(function (cb) {
+    User.findById(req.body.like).exec(function (err, docs) {
+      if (err) {
+        throw cb(err)
+      }
 
-  // StoreMatch.create({
-  //   ref: [],
-  //   messages: []
-  // })
-  // .then(match => res.status(201).json({ storeMatch: match}))
+      // do some stuff with docs & pass or directly pass it
+      cb(null, docs)
+    })
+  })
+  async.parallel(queries, function (err, docs) {
+    if (err) {
+      throw err
+    }
+    const user_1 = docs[0] // result of queries[0]
+    // console.log(user_1)
+    const user_2 = docs[1] // result of queries[1]
+    // console.log(user_2)
+    user_1_id = user_1._id
+    // console.log('user 1 id:', user_1._id)
+    user_2_id = user_2._id
+    // console.log('user 2 id:', user_2._id)
+    StoreMatch.create({ ref: [user_1_id, user_2_id], messages: [] })
+      .then(match => {
+        user_1.test = { ...user_1.test, ...{ [user_2_id]: { user_ref: user_2_id, match_ref: match._id } } }
+        user_1.save()
+        user_2.test = { ...user_2.test, ...{ [user_1_id]: match._id } }
+        user_2.test[user_1_id] = match._id
+        user_2.save()
+        res.status(201).json({ test: match })
+      })
+  })
+  // now create a new StoreMatch with both user_ids
+  // save a reference to the match to both users match object
 })
-  .then(me => res.status(201).json({ user: me }))
-}
 
 // Route for GET all stored match data
 router.get('/match', (req, res, next) => {
@@ -89,8 +105,14 @@ router.get('/match', (req, res, next) => {
 
 // Index all users
 router.get('/users', (req, res, next) => {
+  const pop = () => {
+    return 'test.5dc1a8082d3fde615f7e8caf.user_ref test.5dc1a8082d3fde615f7e8caf.match_ref'
+  }
   User.find()
     .select('-createdAt -updatedAt -matches -images, -likes')
+
+    // .populate('test.5dc1a8082d3fde615f7e8caf.user_ref')
+    // .populate(pop())
 
     // .populate('matches', '-likes -matches -token')
     .then(users => {
@@ -180,6 +202,13 @@ router.delete('/users/relations', (req, res, next) => {
       users.forEach(user => {
         user.likes = []
         user.matches = []
+        user.test = {
+          user_1: false,
+          user_2: false,
+          user_3: {
+            hello: 'world'
+          }
+        }
         user.save()
       })
     })
