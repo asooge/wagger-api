@@ -21,7 +21,10 @@ const userSchema = new mongoose.Schema({
     maxlength: 500
   },
   profile: String,
-  images: Array,
+  images: {
+    type: Array,
+    default: []
+  },
   likes: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User'

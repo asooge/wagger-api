@@ -171,14 +171,16 @@ router.post('/users/:id/speak', (req, res, next) => {
 
 // Upload a dog image
 router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, next) => {
-  console.log(req.file)
   console.log(':num is', req.params.num)
   uploadApi(req.file, req.params.id, req.params.num)
     .then(awsResponse => {
       console.log('from aws', awsResponse)
       User.findById(req.params.id)
         .then(user => {
-          user.images[req.params.num] = (awsResponse.Location)
+          console.log('user images:', user.images)
+          // user.images[req.params.num] = (awsResponse.Location)
+          // user.images.splice([req.params.num, 0, awsResponse.Location])
+          user.updateOne(user.images.splice([req.params.num], 0, awsResponse.Location))
           return user.save()
         })
         .then(me => res.status(201).json({ user: me.toObject() }))
@@ -187,6 +189,7 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
 
 // Upload a profile pic
 router.post('/users/:id/profile', multerUpload.single('file'), (req, res, next) => {
+  console.log(req.file)
   uploadApi(req.file, req.params.id, 'profile')
     .then(awsResponse => {
       User.findById(req.params.id)
