@@ -188,7 +188,7 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
 })
 
 // Upload a profile pic
-router.post('/users/:id/profile', multerUpload.single('file'), (req, res, next) => {
+router.post('/users/:id/profile', multerUpload.single('profile'), (req, res, next) => {
   console.log(req.file)
   uploadApi(req.file, req.params.id, 'profile')
     .then(awsResponse => {
