@@ -40,6 +40,7 @@ router.get('/users', (req, res, next) => {
 router.get('/wagger', (req, res, next) => {
   let randNum = 0
   User.find()
+    .select('-createdAt -updatedAt -matches -likes -waggers -wag -lastPull -email -token -profile')
     .then(waggers => {
       return waggers.map(wagger => wagger.toObject())
     })
@@ -56,6 +57,7 @@ router.get('/wagger', (req, res, next) => {
 router.get('/wagger/:id', (req, res, next) => {
   let randNum = 0
   User.find()
+    .select('-createdAt -updatedAt -matches -likes -waggers -wag -lastPull -email -token -profile')
     .then(waggers => {
       return waggers.map(wagger => wagger.toObject())
     })
