@@ -52,6 +52,34 @@ router.get('/wagger', (req, res, next) => {
     .catch(next)
 })
 
+// get 5 waggers for a particular user
+router.get('/wagger/:id', (req, res, next) => {
+  let randNum = 0
+  User.find()
+    .then(waggers => {
+      return waggers.map(wagger => wagger.toObject())
+    })
+    .then(waggers => {
+      randNum = Math.floor(Math.random() * waggers.length)
+      console.log(randNum)
+      return waggers.concat(waggers).splice(randNum, 5)
+    })
+    .then(waggers => {
+      User.findById(req.params.id)
+        .then(me => {
+          if (new Date() - me.lastPull >= 86400000) {
+            me.waggers = waggers
+            me.wag = 0
+            me.lastPull = new Date() - 1
+          }
+          return me.save()
+        })
+        .catch(console.error)
+    })
+    .then(waggers => res.status(200).json({ waggers }))
+    .catch(next)
+})
+
 // Show one user
 router.get('/users/:id', (req, res, next) => {
   User.findById(req.params.id)
