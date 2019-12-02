@@ -36,6 +36,21 @@ router.get('/users', (req, res, next) => {
     .then(users => res.status(200).json({ users: users }))
     .catch(next)
 })
+// get 5 waggers and record timestamp
+router.get('/wagger', (req, res, next) => {
+  let randNum = 0
+  User.find()
+    .then(waggers => {
+      return waggers.map(wagger => wagger.toObject())
+    })
+    .then(waggers => {
+      randNum = Math.floor(Math.random() * waggers.length)
+      console.log(randNum)
+      return waggers.concat(waggers).splice(randNum, 5)
+    })
+    .then(waggers => res.status(200).json({ waggers }))
+    .catch(next)
+})
 
 // Show one user
 router.get('/users/:id', (req, res, next) => {

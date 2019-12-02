@@ -25,6 +25,15 @@ const userSchema = new mongoose.Schema({
     type: Array,
     default: []
   },
+  waggers: Array,
+  wag: {
+    type: Number,
+    default: 0
+  },
+  lastPull: {
+    type: String,
+    default: new Date() - 86400000
+  },
   likes: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User'
