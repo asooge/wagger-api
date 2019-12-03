@@ -73,12 +73,12 @@ router.get('/wagger/:id', (req, res, next) => {
             me.waggers = waggers
             me.wag = 0
             me.lastPull = new Date() - 1
+            me.save()
+            res.status(200).json({ user: me.toObject() })
           }
-          return me.save()
         })
-        .catch(console.error)
+        // .then(me => res.status(200).json({ user: me.toObject() }))
     })
-    .then(waggers => res.status(200).json({ waggers }))
     .catch(next)
 })
 
@@ -92,14 +92,29 @@ router.get('/users/:id', (req, res, next) => {
     .catch(next)
 })
 
+// Dislike a dog
+// Post request to 'create' the dislike
+router.post('/wagger/:id/', (req, res, next) => {
+  User.findOneAndUpdate({ _id: req.params.id }, { $inc: { wag: 1 } }).then(me => {
+    return me.save()
+  })
+    .then(me => res.status(200).json({ user: me.toObject() }))
+  // User.findById(req.params.id)
+  //   .then(me => {
+  //     const currentWags = me.wag
+  //     me.updateOne({ wag: currentWags + 1 })
+  //     me.save()
+  //     res.status(200).json({ user: me.toObject() })
+  //   })
+})
+
 // Like a dog
 // Patch request to update user data with new like
-router.patch('/users/:id/likes', (req, res, next) => {
+router.patch('/users/:id/likes/:user', (req, res, next) => {
   console.log(req.params)
-  console.log(req.body.like)
 
   const myId = req.params.id
-  const matchId = req.body.like
+  const matchId = req.params.user
   // find current user
   User.findById(myId)
     .then(function (me) {
@@ -109,19 +124,25 @@ router.patch('/users/:id/likes', (req, res, next) => {
     .then((me) => {
       User.findById(matchId)
         .then(user => {
-          console.log(user)
           // if you already matched with the user, return
           if (user.matches.find(match => match.reference.toString() === myId)) {
-            console.log('found the match')
-            return me
+            console.log('already matched')
+            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } })
+              .then(me => {
+                return me.save()
+              })
           }
           // if you already like the user, return
           if (me.likes.includes(matchId)) {
-            return me
+            console.log('already liked')
+            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } })
+              .then(me => {
+                return me.save()
+              })
           }
           // if its a match!
           if (user.likes.includes(myId)) {
-            console.log(true)
+            console.log('its a match')
             // add the relation to the other-user match array and save
             user.matches.push({ reference: myId, messages: [] })
             console.log(user)
@@ -129,13 +150,20 @@ router.patch('/users/:id/likes', (req, res, next) => {
 
             // also add to current-user match array and save
             me.matches.push({ reference: matchId, messages: [] })
-            me.save()
             // finally add the like to current-user array for good measure
             me.likes.push(matchId)
-          } else {
-            // otherwise, simply add the like to the user likes array and save
-            me.likes.push(matchId)
+            const currentWag = me.wag
+            me.wag = currentWag + 1
             me.save()
+            return me
+          } else {
+            console.log('just a like')
+            // otherwise, simply add the like to the user likes array and save
+            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 }, $push: { likes: matchId } })
+              .then(me => {
+                // me.likes.push(matchId)
+                return me.save()
+              })
           }
           return me
         })
