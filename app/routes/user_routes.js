@@ -95,17 +95,16 @@ router.get('/users/:id', (req, res, next) => {
 // Dislike a dog
 // Post request to 'create' the dislike
 router.post('/wagger/:id/', (req, res, next) => {
-  User.findOneAndUpdate({ _id: req.params.id }, { $inc: { wag: 1 } }).then(me => {
-    return me.save()
-  })
+  // User.findOneAndUpdate({ _id: req.params.id }, { $inc: { wag: 1 } }).then(me => {
+  //   return me.save()
+  // })
+  //   .then(me => res.status(200).json({ user: me.toObject() }))
+  User.findById(req.params.id)
+    .then(me => {
+      me.wag++
+      return me.save()
+    })
     .then(me => res.status(200).json({ user: me.toObject() }))
-  // User.findById(req.params.id)
-  //   .then(me => {
-  //     const currentWags = me.wag
-  //     me.updateOne({ wag: currentWags + 1 })
-  //     me.save()
-  //     res.status(200).json({ user: me.toObject() })
-  //   })
 })
 
 // Like a dog
