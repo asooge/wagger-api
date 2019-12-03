@@ -69,7 +69,7 @@ router.get('/wagger/:id', (req, res, next) => {
     .then(waggers => {
       User.findById(req.params.id)
         .then(me => {
-          if (new Date() - me.lastPull >= 86400000) {
+          if (new Date() - me.lastPull >= 86400000 - 86400000) {
             me.waggers = waggers
             me.wag = 0
             me.lastPull = new Date() - 1
@@ -117,55 +117,59 @@ router.patch('/users/:id/likes/:user', (req, res, next) => {
   const matchId = req.params.user
   // find current user
   User.findById(myId)
-    .then(function (me) {
-      return me
-    })
+    // .then(function (me) {
+    //   return me
+    // })
     // then find other-user and compare with me
     .then((me) => {
       User.findById(matchId)
         .then(user => {
-          // if you already matched with the user, return
+          // if you already matched with the user, increment wag and return
           if (user.matches.find(match => match.reference.toString() === myId)) {
             console.log('already matched')
-            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } })
-              .then(me => {
-                return me.save()
-              })
+            me.wag++
+            return me.save()
+          //   User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } }, {returnOriginal: false})
+          //     .then(me => res.status(200).json({ user: me.toObject() }))
           }
-          // if you already like the user, return
+          // if you already like the user, increment wag and return
           if (me.likes.includes(matchId)) {
             console.log('already liked')
-            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } })
-              .then(me => {
-                return me.save()
-              })
+            me.wag++
+            return me.save()
+          //   User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 } }, {returnOriginal: false})
+          //     .then(me => res.status(200).json({ user: me.toObject() }))
+          //   return me.save()
           }
           // if its a match!
           if (user.likes.includes(myId)) {
             console.log('its a match')
             // add the relation to the other-user match array and save
             user.matches.push({ reference: myId, messages: [] })
-            console.log(user)
             user.save()
 
+            // User.findOneAndUpdate({_id: matchId}, { $push: { matches: { reference: myId, messages: [] } } }, {returnOriginal: false})
+            //   .then(user => user.save())
+            //   .then(console.log)
             // also add to current-user match array and save
-            me.matches.push({ reference: matchId, messages: [] })
-            // finally add the like to current-user array for good measure
+            // add the like to current-user array for good measure
+            // iterate wag, save and return me
+            me.wag++
             me.likes.push(matchId)
-            const currentWag = me.wag
-            me.wag = currentWag + 1
-            me.save()
-            return me
+            me.matches.push({ reference: matchId, messages: [] })
+            return me.save()
+            // User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 }, $push: { likes: matchId, matches: { reference: matchId, messages: [] } } }, {returnOriginal: false})
+            //   .then(me => res.status(200).json({ user: me.toObject() }))
           } else {
             console.log('just a like')
             // otherwise, simply add the like to the user likes array and save
-            User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 }, $push: { likes: matchId } })
-              .then(me => {
-                // me.likes.push(matchId)
-                return me.save()
-              })
+            me.wag++
+            me.likes.push(matchId)
+            return me.save()
+
+            // User.findOneAndUpdate({_id: myId}, { $inc: { wag: 1 }, $push: { likes: matchId } }, {returnOriginal: false})
+            //   .then(me => res.status(200).json({ user: me.toObject() }))
           }
-          return me
         })
         .then(me => res.status(200).json({ user: me.toObject() }))
         .catch(next)
