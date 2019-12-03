@@ -68,6 +68,7 @@ router.get('/wagger/:id', (req, res, next) => {
     })
     .then(waggers => {
       User.findById(req.params.id)
+        .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
         .then(me => {
           if (new Date() - me.lastPull >= 86400000 - 86400000) {
             me.waggers = waggers
@@ -85,7 +86,7 @@ router.get('/wagger/:id', (req, res, next) => {
 // Show one user
 router.get('/users/:id', (req, res, next) => {
   User.findById(req.params.id)
-    .populate('matches.reference', '-likes -matches -token')
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(errors.handle404)
     .then(user => user.toObject())
     .then(user => res.status(200).json({ user }))
@@ -116,6 +117,7 @@ router.patch('/users/:id/likes/:user', (req, res, next) => {
   const matchId = req.params.user
   // find current user
   User.findById(myId)
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     // .then(function (me) {
     //   return me
     // })
@@ -225,6 +227,7 @@ router.delete('/users/:id/matches', (req, res, next) => {
 // POST request to '/users/:id/name'
 router.post('/users/:id/name', (req, res, next) => {
   User.findById(req.params.id)
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(me => {
       me.name = req.body.name
       return me.save()
@@ -237,6 +240,7 @@ router.post('/users/:id/name', (req, res, next) => {
 // POST request to '/users/:id/speak'
 router.post('/users/:id/speak', (req, res, next) => {
   User.findById(req.params.id)
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(me => {
       me.speak = req.body.speak
       return me.save()
@@ -252,6 +256,7 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
     .then(awsResponse => {
       console.log('from aws', awsResponse)
       User.findById(req.params.id)
+        .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
         .then(user => {
           console.log('user images:', user.images)
           // user.images[req.params.num] = (awsResponse.Location)
@@ -269,6 +274,7 @@ router.post('/users/:id/profile', multerUpload.single('profile'), (req, res, nex
   uploadApi(req.file, req.params.id, 'profile')
     .then(awsResponse => {
       User.findById(req.params.id)
+        .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
         .then(user => {
           user.profile = awsResponse.Location
           return user.save()
@@ -284,6 +290,7 @@ router.post('/users/:id/matches/:match/messages', (req, res, next) => {
   console.log(time.toLocaleString())
   // Find the current user
   User.findById(req.params.id)
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
   // Find the current match
     .then(me => {
       console.log(me)
@@ -349,6 +356,7 @@ router.post('/sign-in', (req, res, next) => {
 
   // find a user based on the email that was passed
   User.findOne({ email: req.body.credentials.email })
+    .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(record => {
       if (!record) {
         throw new BadCredentialsError()
