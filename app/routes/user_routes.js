@@ -268,8 +268,40 @@ router.post('/users/:id/images/:num', multerUpload.single('file'), (req, res, ne
     })
 })
 
+// Update (patch) a dog image
+router.patch('/users/:id/images/:num', multerUpload.single('file'), (req, res, next) => {
+  console.log(':num is', req.params.num)
+  uploadApi(req.file, req.params.id, req.params.num)
+    .then(awsResponse => {
+      console.log('from aws', awsResponse)
+      User.findById(req.params.id)
+        .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
+        .then(user => {
+          console.log('user images:', user.images)
+          user.images.splice([req.params.num], 1, awsResponse.Location)
+          return user.save()
+        })
+        .then(me => res.status(201).json({ user: me.toObject() }))
+    })
+})
+
 // Upload a profile pic
 router.post('/users/:id/profile', multerUpload.single('profile'), (req, res, next) => {
+  console.log(req.file)
+  uploadApi(req.file, req.params.id, 'profile')
+    .then(awsResponse => {
+      User.findById(req.params.id)
+        .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
+        .then(user => {
+          user.profile = awsResponse.Location
+          return user.save()
+        })
+        .then(me => res.status(201).json({ user: me.toObject() }))
+    })
+})
+
+// Alternate route patch profile
+router.patch('/users/:id/profile', multerUpload.single('file'), (req, res, next) => {
   console.log(req.file)
   uploadApi(req.file, req.params.id, 'profile')
     .then(awsResponse => {
