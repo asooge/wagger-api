@@ -37,7 +37,7 @@ router.get('/users', (req, res, next) => {
     .catch(next)
 })
 // get 5 waggers and record timestamp
-router.get('/wagger', (req, res, next) => {
+router.get('/wagger', requireToken, (req, res, next) => {
   let randNum = 0
   User.find()
     .select('-createdAt -updatedAt -matches -likes -waggers -wag -lastPull -email -token -profile')
@@ -54,7 +54,7 @@ router.get('/wagger', (req, res, next) => {
 })
 
 // get 5 waggers for a particular user
-router.get('/wagger/:id', (req, res, next) => {
+router.get('/wagger/:id', requireToken, (req, res, next) => {
   let randNum = 0
   User.find()
     .select('-createdAt -updatedAt -matches -likes -waggers -wag -lastPull -email -token -profile')
@@ -70,7 +70,7 @@ router.get('/wagger/:id', (req, res, next) => {
       User.findById(req.params.id)
         .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
         .then(me => {
-          if (new Date() - me.lastPull >= 86400000 - 86400000) {
+          if (new Date() - me.lastPull >= 86400000) {
             me.waggers = waggers
             me.wag = 0
             me.lastPull = new Date() - 1
@@ -84,7 +84,7 @@ router.get('/wagger/:id', (req, res, next) => {
 })
 
 // Show one user
-router.get('/users/:id', (req, res, next) => {
+router.get('/users/:id', requireToken, (req, res, next) => {
   User.findById(req.params.id)
     .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(errors.handle404)
@@ -95,7 +95,7 @@ router.get('/users/:id', (req, res, next) => {
 
 // Dislike a dog
 // Post request to 'create' the dislike
-router.post('/wagger/:id/', (req, res, next) => {
+router.post('/wagger/:id/', requireToken, (req, res, next) => {
   // User.findOneAndUpdate({ _id: req.params.id }, { $inc: { wag: 1 } }).then(me => {
   //   return me.save()
   // })
@@ -110,7 +110,7 @@ router.post('/wagger/:id/', (req, res, next) => {
 
 // Like a dog
 // Patch request to update user data with new like
-router.patch('/users/:id/likes/:user', (req, res, next) => {
+router.patch('/users/:id/likes/:user', requireToken, (req, res, next) => {
   console.log(req.params)
 
   const myId = req.params.id
@@ -204,19 +204,29 @@ router.delete('/users/relations', (req, res, next) => {
 
 // Delete a match
 // both for user and matched user (bi-directional)
-router.delete('/users/:id/matches', (req, res, next) => {
-  User.findById(req.body.match)
-    .then(user => {
-      console.log(user)
-      user.matches.splice(user.matches.indexOf(req.params.id), 1)
-      user.likes.splice(user.likes.indexOf(req.params.id), 1)
-      return user.save()
-    })
-    .catch(console.error)
+router.delete('/users/:id/matches', requireToken, (req, res, next) => {
+  // User.findById(req.body.match)
+  //   .then(user => {
+  //     console.log(user)
+  //     user.matches.splice(user.matches.indexOf(req.params.id), 1)
+  //     user.likes.splice(user.likes.indexOf(req.params.id), 1)
+  //     return user.save()
+  //   })
+  //   .catch(console.error)
   User.findById(req.params.id)
-    .populate('matches', '-likes -matches -token -createdAt -updatedAt')
+    // .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(user => {
-      user.matches.splice(user.matches.indexOf(req.body.match), 1)
+      console.log('can we find:', user.matches.findIndex(match => match.reference.toString() === req.body.match))
+      console.log(user.matches)
+      console.log(req.body.match)
+      // console.log('delete match with this user id:', req.body.match)
+      // console.log('user matches is', user.matches)
+      // console.log('can you find:', user.matches[0].reference._id)
+      // console.log('index of', user.matches.findIndex(match => match.reference._id === req.body.match))
+      const deleteIndex = user.matches.findIndex(match => match.reference.toString() === req.body.match)
+      console.log('delete index is', deleteIndex)
+      user.matches.splice(deleteIndex, 1)
+      console.log('updated user', user)
       user.likes.splice(user.likes.indexOf(req.body.match), 1)
       return user.save()
     })
@@ -225,7 +235,7 @@ router.delete('/users/:id/matches', (req, res, next) => {
 
 // Add or update dog name
 // POST request to '/users/:id/name'
-router.post('/users/:id/name', (req, res, next) => {
+router.post('/users/:id/name', requireToken, (req, res, next) => {
   User.findById(req.params.id)
     .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(me => {
@@ -238,7 +248,7 @@ router.post('/users/:id/name', (req, res, next) => {
 
 // Add or update speak
 // POST request to '/users/:id/speak'
-router.post('/users/:id/speak', (req, res, next) => {
+router.post('/users/:id/speak', requireToken, (req, res, next) => {
   User.findById(req.params.id)
     .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
     .then(me => {
@@ -316,7 +326,7 @@ router.patch('/users/:id/profile', multerUpload.single('file'), (req, res, next)
 })
 
 // Create a message
-router.post('/users/:id/matches/:match/messages', (req, res, next) => {
+router.post('/users/:id/matches/:match/messages', requireToken, (req, res, next) => {
   console.log('time is:', req.body.time)
   const time = new Date()
   console.log(time.toLocaleString())
@@ -327,7 +337,7 @@ router.post('/users/:id/matches/:match/messages', (req, res, next) => {
     .then(me => {
       console.log(me)
       return me.matches.find(match => {
-        return match.reference.toString() === req.params.match
+        return match.reference._id.toString() === req.params.match
       })
     })
   // push the new message to the match array
@@ -342,7 +352,7 @@ router.post('/users/:id/matches/:match/messages', (req, res, next) => {
     .then(user => {
       console.log(user)
       return user.matches.find(match => {
-        return match.reference.toString() === req.params.id
+        return match.reference._id.toString() === req.params.id
       })
     })
   // push the new message to the match array
