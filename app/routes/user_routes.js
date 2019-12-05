@@ -70,7 +70,7 @@ router.get('/wagger/:id', requireToken, (req, res, next) => {
       User.findById(req.params.id)
         .populate('matches.reference', '-likes -matches -token -waggers -wag -lastPull -email')
         .then(me => {
-          if (new Date() - me.lastPull >= 86400000) {
+          if (new Date() - me.lastPull >= 86400000 - 86400000) {
             me.waggers = waggers
             me.wag = 0
             me.lastPull = new Date() - 1
