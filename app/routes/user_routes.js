@@ -25,7 +25,7 @@ const storage = multer.memoryStorage()
 const multerUpload = multer({ storage: storage })
 
 // Index all users
-router.get('/users', (req, res, next) => {
+router.get('/users', requireToken, (req, res, next) => {
   User.find()
     .select('-createdAt -updatedAt -matches.id -matches.messages._id')
     .populate('matches.messages.user', '-speak -images -likes -createdAt -updatedAt -token -matches -__v')
@@ -177,30 +177,30 @@ router.patch('/users/:id/likes/:user', requireToken, (req, res, next) => {
     })
 })
 
-// Reset likes to []
-router.delete('/users/:id/likes', (req, res, next) => {
-  User.findById(req.params.id)
-    .then(user => {
-      user.likes = []
-      return user.save()
-    })
-    .then(user => res.status(200).json({ user: user.toObject() }))
-})
-
-// Nuclear option - reset all user relations
-// For development only
-router.delete('/users/relations', (req, res, next) => {
-  User.find()
-    .then(users => {
-      users.forEach(user => {
-        user.likes = []
-        user.matches = []
-        user.save()
-      })
-    })
-    .then(user => res.sendStatus(204))
-    .catch(next)
-})
+// // Reset likes to []
+// router.delete('/users/:id/likes', (req, res, next) => {
+//   User.findById(req.params.id)
+//     .then(user => {
+//       user.likes = []
+//       return user.save()
+//     })
+//     .then(user => res.status(200).json({ user: user.toObject() }))
+// })
+//
+// // Nuclear option - reset all user relations
+// // For development only
+// router.delete('/users/relations', (req, res, next) => {
+//   User.find()
+//     .then(users => {
+//       users.forEach(user => {
+//         user.likes = []
+//         user.matches = []
+//         user.save()
+//       })
+//     })
+//     .then(user => res.sendStatus(204))
+//     .catch(next)
+// })
 
 // Delete a match
 // both for user and matched user (bi-directional)
